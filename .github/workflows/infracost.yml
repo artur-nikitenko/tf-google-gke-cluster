@@ -46,10 +46,10 @@ jobs:
             --out-file=/tmp/infracost.json
 
       - name: Post cost estimate to PR
-        uses: infracost/actions@v2
+        uses: infracost/actions/comment@v2
         with:
           path: /tmp/infracost.json
           behavior: update
-          post_condition: always
         env:
           INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
