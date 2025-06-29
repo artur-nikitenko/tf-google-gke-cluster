@@ -46,7 +46,7 @@ jobs:
             --out-file=/tmp/infracost.json
 
       - name: Post cost estimate to PR
-        uses: infracost/infracost-gh-action@v2
+        uses: infracost/infracost-gh-action@v1.1.1
         with:
           path: /tmp/infracost.json
           behavior: update
