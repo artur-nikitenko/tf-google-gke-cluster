@@ -2,14 +2,18 @@ name: Infracost CI/CD
 
 on:
   pull_request:
-    branches:
-      - main
+    paths:
+      - '**/*.tf'
+      - '**/*.tfvars'
+      - '**/*.yml'
+      - '**/*.yaml'
+  push:
+    branches: [main]
 
 jobs:
   infracost:
     name: Infracost Breakdown
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -19,20 +23,28 @@ jobs:
         with:
           terraform_version: 1.6.6
 
-      - name: Terraform init
-        run: terraform init
-
-      - name: Terraform plan
-        run: terraform plan -out=tfplan.binary
-
-      - name: Generate JSON plan
-        run: terraform show -json tfplan.binary > plan.json
-
-      - name: Run Infracost
-        uses: infracost/actions@v2
+      - name: Cache Terraform providers
+        uses: actions/cache@v3
         with:
-          path: plan.json
-          format: github-comment
-          behavior: update
-        env:
-          INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
+          path: |
+            ~/.terraform.d/plugin-cache
+          key: ${{ runner.os }}-terraform-${{ hashFiles('**/*.tf') }}
+          restore-keys: |
+            ${{ runner.os }}-terraform-
+
+      - name: Generate Infracost cost estimate
+        uses: infracost/actions/setup@v2
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      - name: Run infracost breakdown
+        run: |
+          infracost breakdown \
+            --path=. \
+            --format=json \
+            --out-file=/tmp/infracost.json
+
+      - name: Post cost estimate to PR
+        uses: infracost/actions/comment@v2
+        with:
+          path: /tmp/infracost.json
