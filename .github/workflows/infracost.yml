@@ -5,10 +5,9 @@ on:
     paths:
       - '**/*.tf'
       - '**/*.tfvars'
-      - '**/*.yml'
-      - '**/*.yaml'
   push:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   infracost:
@@ -24,28 +23,19 @@ jobs:
         with:
           terraform_version: 1.6.6
 
-      - name: Cache Terraform providers
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.terraform.d/plugin-cache
-          key: ${{ runner.os }}-terraform-${{ hashFiles('**/*.tf') }}
-          restore-keys: |
-            ${{ runner.os }}-terraform-
-
       - name: Setup Infracost
         uses: infracost/actions/setup@v2
         with:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
 
-      - name: Run infracost breakdown
+      - name: Generate Infracost diff
         run: |
           infracost breakdown \
             --path=. \
             --format=json \
             --out-file=/tmp/infracost.json
 
-      - name: Post cost estimate to PR
+      - name: Post Infracost comment to PR
         uses: infracost/actions/comment@v2
         with:
           path: /tmp/infracost.json
